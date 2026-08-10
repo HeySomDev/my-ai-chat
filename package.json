@@ -1,0 +1,9 @@
+{
+  "name": "gemini-image-chat",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "busboy": "^1.6.0"
+  }
+}
