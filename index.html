@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Gemini AI Chat</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .message {
+            max-width: 85%;
+            word-break: break-word;
+        }
+
+        #previewBox {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 h-screen flex flex-col">
+
+<!-- ================= CHAT ================= -->
+
+<div id="chat"
+     class="flex-1 overflow-y-auto p-4 space-y-4">
+
+    <!-- AI welcome -->
+    <div class="flex justify-start">
+
+        <div class="message bg-white p-3 rounded-2xl shadow-sm">
+
+            হ্যালো! 👋<br>
+            আপনি আমাকে লেখা অথবা ছবি পাঠাতে পারেন।
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= IMAGE PREVIEW ================= -->
+
+<div id="previewBox"
+     class="bg-white border-t px-3 pt-2">
+
+    <div class="relative inline-block">
+
+        <img id="preview"
+             class="max-w-[180px] max-h-[150px]
+                    object-cover rounded-xl border">
+
+        <button
+            onclick="removeImage()"
+            class="absolute -top-2 -right-2
+                   bg-red-500 text-white
+                   w-6 h-6 rounded-full">
+
+            ×
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================= INPUT ================= -->
+
+<div class="p-3 bg-white border-t">
+
+    <div class="flex items-center gap-2">
+
+        <!-- GALLERY -->
+
+        <label
+            for="imageInput"
+            class="w-11 h-11 flex-shrink-0
+                   flex items-center justify-center
+                   bg-gray-100 border
+                   rounded-full cursor-pointer">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="22"
+                 height="22"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2">
+
+                <rect x="3" y="3"
+                      width="18"
+                      height="18"
+                      rx="2"/>
+
+                <circle cx="8.5"
+                        cy="8.5"
+                        r="1.5"/>
+
+                <path d="M21 15l-5-5L5 21"/>
+
+            </svg>
+
+        </label>
+
+
+        <input
+            id="imageInput"
+            type="file"
+            accept="image/*"
+            class="hidden"
+            onchange="selectImage(event)"
+        >
+
+
+        <!-- TEXT -->
+
+        <input
+            id="input"
+            type="text"
+            placeholder="আপনার প্রশ্ন লিখুন..."
+            class="flex-1 border
+                   px-4 py-3
+                   rounded-full
+                   outline-none
+                   focus:ring-2
+                   focus:ring-purple-500"
+            onkeydown="enterSend(event)"
+        >
+
+
+        <!-- SEND -->
+
+        <button
+            id="sendButton"
+            onclick="sendMessage()"
+            class="w-11 h-11
+                   flex-shrink-0
+                   flex items-center justify-center
+                   bg-purple-600
+                   text-white
+                   rounded-full">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="20"
+                 height="20"
+                 fill="none"
+                 stroke="currentColor"
+                 stroke-width="2">
+
+                <path d="M22 2L11 13"/>
+
+                <path d="M22 2L15 22L11 13L2 9L22 2Z"/>
+
+            </svg>
+
+        </button>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let selectedImage = null;
+
+
+// =============================
+// IMAGE SELECT
+// =============================
+
+function selectImage(event) {
+
+    const file = event.target.files[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+
+        alert("শুধু ছবি নির্বাচন করুন।");
+
+        return;
+    }
+
+    selectedImage = file;
+
+    const reader = new FileReader();
+
+    reader.onload = function(e) {
+
+        document.getElementById("preview").src =
+            e.target.result;
+
+        document.getElementById("previewBox")
+            .style.display = "block";
+    };
+
+    reader.readAsDataURL(file);
+}
+
+
+// =============================
+// REMOVE IMAGE
+// =============================
+
+function removeImage() {
+
+    selectedImage = null;
+
+    document.getElementById("imageInput").value = "";
+
+    document.getElementById("previewBox")
+        .style.display = "none";
+}
+
+
+// =============================
+// ENTER
+// =============================
+
+function enterSend(event) {
+
+    if (event.key === "Enter") {
+
+        event.preventDefault();
+
+        sendMessage();
+    }
+}
+
+
+// =============================
+// ADD USER MESSAGE
+// =============================
+
+function addUserMessage(text, imageURL) {
+
+    const wrapper = document.createElement("div");
+
+    wrapper.className =
+        "flex justify-end";
+
+
+    const bubble = document.createElement("div");
+
+    bubble.className =
+        "message bg-purple-600 text-white p-3 rounded-2xl shadow-sm";
+
+
+    if (imageURL) {
+
+        const img = document.createElement("img");
+
+        img.src = imageURL;
+
+        img.className =
+            "max-w-full max-h-64 rounded-xl mb-2 object-cover";
+
+        bubble.appendChild(img);
+    }
+
+
+    if (text) {
+
+        const textElement =
+            document.createElement("div");
+
+        textElement.textContent = text;
+
+        bubble.appendChild(textElement);
+    }
+
+
+    wrapper.appendChild(bubble);
+
+    document.getElementById("chat")
+        .appendChild(wrapper);
+}
+
+
+// =============================
+// ADD AI MESSAGE
+// =============================
+
+function addAIMessage(text) {
+
+    const wrapper = document.createElement("div");
+
+    wrapper.className =
+        "flex justify-start";
+
+
+    const bubble = document.createElement("div");
+
+    bubble.className =
+        "message bg-white text-gray-800 p-3 rounded-2xl shadow-sm";
+
+    bubble.textContent = text;
+
+
+    wrapper.appendChild(bubble);
+
+    document.getElementById("chat")
+        .appendChild(wrapper);
+}
+
+
+// =============================
+// SEND
+// =============================
+
+async function sendMessage() {
+
+    const input =
+        document.getElementById("input");
+
+    const sendButton =
+        document.getElementById("sendButton");
+
+    const text =
+        input.value.trim();
+
+
+    if (!text && !selectedImage) {
+
+        return;
+    }
+
+
+    // IMAGE PREVIEW URL
+    let imageURL = null;
+
+    if (selectedImage) {
+
+        imageURL =
+            URL.createObjectURL(selectedImage);
+    }
+
+
+    // USER MESSAGE
+    addUserMessage(text, imageURL);
+
+
+    // CLEAR INPUT
+    input.value = "";
+
+
+    // SAVE IMAGE
+    const imageToSend =
+        selectedImage;
+
+
+    selectedImage = null;
+
+    document.getElementById("imageInput").value = "";
+
+    document.getElementById("previewBox")
+        .style.display = "none";
+
+
+    // SCROLL
+    scrollChat();
+
+
+    // BUTTON DISABLE
+
+    sendButton.disabled = true;
+
+    sendButton.style.opacity = "0.5";
+
+
+    // TYPING MESSAGE
+
+    const typing = document.createElement("div");
+
+    typing.className =
+        "flex justify-start";
+
+    typing.innerHTML = `
+        <div class="message bg-white p-3 rounded-2xl shadow-sm">
+            Gemini দেখছে...
+        </div>
+    `;
+
+    document.getElementById("chat")
+        .appendChild(typing);
+
+    scrollChat();
+
+
+    try {
+
+        // FORM DATA
+
+        const formData =
+            new FormData();
+
+        formData.append(
+            "message",
+            text
+        );
+
+
+        if (imageToSend) {
+
+            formData.append(
+                "image",
+                imageToSend
+            );
+        }
+
+
+        // SEND TO YOUR SERVER
+
+        const response =
+            await fetch(
+                "/api/chat",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        typing.remove();
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                data.error ||
+                "Server error"
+            );
+        }
+
+
+        addAIMessage(
+            data.reply ||
+            "কোনো উত্তর পাওয়া যায়নি।"
+        );
+
+
+    } catch (error) {
+
+        typing.remove();
+
+        addAIMessage(
+            "দুঃখিত, সমস্যা হয়েছে: " +
+            error.message
+        );
+
+    }
+
+
+    sendButton.disabled = false;
+
+    sendButton.style.opacity = "1";
+
+    scrollChat();
+}
+
+
+// =============================
+// SCROLL
+// =============================
+
+function scrollChat() {
+
+    const chat =
+        document.getElementById("chat");
+
+    chat.scrollTop =
+        chat.scrollHeight;
+}
+
+</script>
+
+</body>
+  </html>
